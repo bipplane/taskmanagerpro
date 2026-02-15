@@ -14,6 +14,8 @@ public class StartupManagerService
         @"SOFTWARE\Microsoft\Windows\CurrentVersion\RunOnce",
     ];
 
+    private const string ApprovedRunPath = @"SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\StartupApproved\Run";
+
     public StartupManagerService(ILogger<StartupManagerService> logger)
     {
         _logger = logger;
@@ -44,6 +46,43 @@ public class StartupManagerService
         });
     }
 
+    public Task SetStartupEnabledAsync(string entryName, string location, bool enabled)
+    {
+        return Task.Run(() =>
+        {
+            try
+            {
+                RegistryKey root;
+                if (location.StartsWith("HKLM"))
+                    root = Registry.LocalMachine;
+                else if (location.StartsWith("HKCU"))
+                    root = Registry.CurrentUser;
+                else
+                    return; // Can't toggle startup folder entries
+
+                using var key = root.OpenSubKey(ApprovedRunPath, writable: true);
+                if (key == null) return;
+
+                if (enabled)
+                {
+                    key.SetValue(entryName, new byte[] { 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }, RegistryValueKind.Binary);
+                }
+                else
+                {
+                    var timeBytes = BitConverter.GetBytes(DateTime.UtcNow.ToFileTimeUtc());
+                    var value = new byte[12];
+                    value[0] = 3;
+                    Array.Copy(timeBytes, 0, value, 4, 8);
+                    key.SetValue(entryName, value, RegistryValueKind.Binary);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to toggle startup entry {Name}", entryName);
+            }
+        });
+    }
+
     private List<StartupEntry> ReadRegistryRun(RegistryKey root, string path, string rootName)
     {
         var entries = new List<StartupEntry>();
@@ -62,7 +101,7 @@ public class StartupManagerService
                         Name = valueName,
                         Command = command,
                         Location = $"{rootName}\\{path}",
-                        IsEnabled = true,
+                        IsEnabled = IsStartupApproved(root, valueName),
                     });
                 }
                 catch (Exception ex)
@@ -76,6 +115,24 @@ public class StartupManagerService
             _logger.LogTrace(ex, "Failed to read registry path {Path}", path);
         }
         return entries;
+    }
+
+    private static bool IsStartupApproved(RegistryKey root, string entryName)
+    {
+        try
+        {
+            using var key = root.OpenSubKey(ApprovedRunPath, false);
+            if (key == null) return true;
+
+            var value = key.GetValue(entryName) as byte[];
+            if (value == null || value.Length < 1) return true;
+
+            return value[0] != 3; // byte 0 == 3 means disabled
+        }
+        catch
+        {
+            return true;
+        }
     }
 
     private List<StartupEntry> GetStartupFolderEntries()

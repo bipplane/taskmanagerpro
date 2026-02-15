@@ -30,4 +30,11 @@ public partial class StartupViewModel : ObservableObject
         }
         catch { }
     }
+
+    [RelayCommand]
+    private async Task ToggleStartup(StartupEntry? entry)
+    {
+        if (entry?.Location == null) return;
+        await _startupManager.SetStartupEnabledAsync(entry.Name, entry.Location, entry.IsEnabled);
+    }
 }
