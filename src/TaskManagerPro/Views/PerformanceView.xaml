@@ -6,6 +6,7 @@
         <Grid.RowDefinitions>
             <RowDefinition Height="*"/>
             <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="*"/>
@@ -18,6 +19,7 @@
             <Grid>
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
                     <RowDefinition Height="*"/>
                 </Grid.RowDefinitions>
                 <StackPanel Grid.Row="0" Orientation="Horizontal">
@@ -25,7 +27,13 @@
                     <TextBlock Text="{Binding CpuPercent, StringFormat='{}{0:F1}%'}" FontSize="16"
                                Foreground="{StaticResource PrimaryBrush}" Margin="12,0,0,0"/>
                 </StackPanel>
-                <lvc:CartesianChart Grid.Row="1" Series="{Binding CpuSeries}"
+                <StackPanel Grid.Row="1" Margin="0,2,0,4">
+                    <TextBlock Text="{Binding CpuName}" FontSize="11"
+                               Foreground="{StaticResource TextDimBrush}" TextTrimming="CharacterEllipsis"/>
+                    <TextBlock Text="{Binding CpuSpecs}" FontSize="10"
+                               Foreground="{StaticResource TextDimBrush}"/>
+                </StackPanel>
+                <lvc:CartesianChart Grid.Row="2" Series="{Binding CpuSeries}"
                                     XAxes="{Binding XAxes}" YAxes="{Binding YAxes}"
                                     AnimationsSpeed="00:00:00.100" TooltipPosition="Hidden"/>
             </Grid>
@@ -36,6 +44,7 @@
                 CornerRadius="8" Margin="4" Padding="12">
             <Grid>
                 <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="*"/>
                 </Grid.RowDefinitions>
@@ -48,7 +57,9 @@
                     <TextBlock Text="{Binding MemoryTotal, StringFormat=' / {0})'}" FontSize="12"
                                Foreground="{StaticResource TextDimBrush}" Margin="0,3,0,0"/>
                 </StackPanel>
-                <lvc:CartesianChart Grid.Row="1" Series="{Binding MemorySeries}"
+                <TextBlock Grid.Row="1" Text="{Binding RamSpecs}" FontSize="11"
+                           Foreground="{StaticResource TextDimBrush}" Margin="0,2,0,4"/>
+                <lvc:CartesianChart Grid.Row="2" Series="{Binding MemorySeries}"
                                     XAxes="{Binding XAxes}" YAxes="{Binding YAxes}"
                                     AnimationsSpeed="00:00:00.100" TooltipPosition="Hidden"/>
             </Grid>
@@ -94,6 +105,18 @@
                                     XAxes="{Binding XAxes}" YAxes="{Binding DiskYAxes}"
                                     AnimationsSpeed="00:00:00.100" TooltipPosition="Hidden"/>
             </Grid>
+        </Border>
+
+        <!-- GPU Info Bar -->
+        <Border Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2" Background="{StaticResource SurfaceBrush}"
+                CornerRadius="8" Margin="4" Padding="12,8"
+                Visibility="{Binding GpuName, Converter={StaticResource BoolToVisConverter}, ConverterParameter=notnull}">
+            <StackPanel Orientation="Horizontal">
+                <TextBlock Text="GPU" FontSize="14" FontWeight="Bold" Foreground="{StaticResource TextBrush}"/>
+                <TextBlock Text="{Binding GpuName}" FontSize="12"
+                           Foreground="{StaticResource TextDimBrush}" Margin="12,2,0,0"
+                           VerticalAlignment="Center"/>
+            </StackPanel>
         </Border>
     </Grid>
 </UserControl>

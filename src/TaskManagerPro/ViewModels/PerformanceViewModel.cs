@@ -4,6 +4,7 @@ using LiveChartsCore;
 using LiveChartsCore.Defaults;
 using LiveChartsCore.SkiaSharpView;
 using LiveChartsCore.SkiaSharpView.Painting;
+using Microsoft.Win32;
 using SkiaSharp;
 using TaskManagerPro.Core.Interfaces;
 using TaskManagerPro.Core.Models;
@@ -29,6 +30,12 @@ public partial class PerformanceViewModel : ObservableObject
     [ObservableProperty] private string _diskWrite = "0 KB/s";
     [ObservableProperty] private string _networkSent = "0 KB/s";
     [ObservableProperty] private string _networkReceived = "0 KB/s";
+
+    // Hardware specs (loaded once at startup)
+    [ObservableProperty] private string _cpuName = "";
+    [ObservableProperty] private string _cpuSpecs = "";
+    [ObservableProperty] private string _gpuName = "";
+    [ObservableProperty] private string _ramSpecs = "";
 
     public ISeries[] CpuSeries { get; }
     public ISeries[] MemorySeries { get; }
@@ -140,6 +147,7 @@ public partial class PerformanceViewModel : ObservableObject
 
         _performanceMonitor.SnapshotUpdated += OnSnapshotUpdated;
         _performanceMonitor.StartMonitoring(TimeSpan.FromSeconds(1));
+        LoadHardwareSpecs();
     }
 
     private void OnSnapshotUpdated(object? sender, PerformanceSnapshot snapshot)
@@ -183,5 +191,63 @@ public partial class PerformanceViewModel : ObservableObject
         if (bytes < 1024) return $"{bytes:F0} B/s";
         if (bytes < 1024 * 1024) return $"{bytes / 1024:F1} KB/s";
         return $"{bytes / (1024 * 1024):F1} MB/s";
+    }
+
+    private void LoadHardwareSpecs()
+    {
+        try
+        {
+            // CPU info from registry
+            using var cpuKey = Registry.LocalMachine.OpenSubKey(
+                @"HARDWARE\DESCRIPTION\System\CentralProcessor\0");
+            if (cpuKey != null)
+            {
+                CpuName = cpuKey.GetValue("ProcessorNameString")?.ToString()?.Trim() ?? "Unknown CPU";
+                var mhz = cpuKey.GetValue("~MHz");
+                var speed = mhz != null ? $"{Convert.ToInt32(mhz)} MHz" : "";
+                CpuSpecs = $"{Environment.ProcessorCount} Logical Processors | {speed}";
+            }
+        }
+        catch
+        {
+            CpuName = "Unknown CPU";
+        }
+
+        try
+        {
+            // GPU info from display adapter registry
+            using var displayKey = Registry.LocalMachine.OpenSubKey(
+                @"SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}\0000");
+            if (displayKey != null)
+            {
+                GpuName = displayKey.GetValue("DriverDesc")?.ToString() ?? "";
+                var ramBytes = displayKey.GetValue("HardwareInformation.qwMemorySize");
+                if (ramBytes is long vramLong)
+                    GpuName += $" ({FormatBytes(vramLong)} VRAM)";
+                else if (ramBytes is int vramInt)
+                    GpuName += $" ({FormatBytes(vramInt)} VRAM)";
+            }
+        }
+        catch
+        {
+            GpuName = "";
+        }
+
+        try
+        {
+            // Total RAM from GlobalMemoryStatusEx (already available via first snapshot)
+            var memStatus = new TaskManagerPro.Core.Services.NativeInterop.MEMORYSTATUSEX
+            {
+                dwLength = (uint)System.Runtime.InteropServices.Marshal.SizeOf<TaskManagerPro.Core.Services.NativeInterop.MEMORYSTATUSEX>()
+            };
+            if (TaskManagerPro.Core.Services.NativeInterop.GlobalMemoryStatusEx(ref memStatus))
+            {
+                RamSpecs = $"{memStatus.ullTotalPhys / (1024.0 * 1024 * 1024):F1} GB Total";
+            }
+        }
+        catch
+        {
+            RamSpecs = "";
+        }
     }
 }
