@@ -1,5 +1,4 @@
 using System.Diagnostics;
-using System.Management;
 using Microsoft.Extensions.Logging;
 using TaskManagerPro.Core.Interfaces;
 using TaskManagerPro.Core.Models;
@@ -105,12 +104,15 @@ public class PerformanceMonitorService : IPerformanceMonitor, IDisposable
     {
         try
         {
-            using var searcher = new ManagementObjectSearcher(
-                "SELECT TotalVisibleMemorySize, FreePhysicalMemory FROM Win32_OperatingSystem");
-            foreach (var obj in searcher.Get())
+            var memStatus = new NativeInterop.MEMORYSTATUSEX
             {
-                snapshot.TotalPhysicalMemory = Convert.ToInt64(obj["TotalVisibleMemorySize"]) * 1024;
-                snapshot.AvailablePhysicalMemory = Convert.ToInt64(obj["FreePhysicalMemory"]) * 1024;
+                dwLength = (uint)System.Runtime.InteropServices.Marshal.SizeOf<NativeInterop.MEMORYSTATUSEX>()
+            };
+
+            if (NativeInterop.GlobalMemoryStatusEx(ref memStatus))
+            {
+                snapshot.TotalPhysicalMemory = (long)memStatus.ullTotalPhys;
+                snapshot.AvailablePhysicalMemory = (long)memStatus.ullAvailPhys;
                 snapshot.UsedPhysicalMemory = snapshot.TotalPhysicalMemory - snapshot.AvailablePhysicalMemory;
                 snapshot.MemoryUsagePercent = snapshot.TotalPhysicalMemory > 0
                     ? (double)snapshot.UsedPhysicalMemory / snapshot.TotalPhysicalMemory * 100.0

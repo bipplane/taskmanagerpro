@@ -1,5 +1,5 @@
 using System.Diagnostics;
-using System.Management;
+using System.Runtime.InteropServices;
 using Microsoft.Extensions.Logging;
 using TaskManagerPro.Core.Enums;
 using TaskManagerPro.Core.Interfaces;
@@ -23,14 +23,13 @@ public class ProcessMonitorService : IProcessMonitor
         return await Task.Run(() =>
         {
             var processes = Process.GetProcesses();
-            var commandLines = GetCommandLines();
             var result = new List<ProcessInfo>(processes.Length);
 
             foreach (var proc in processes)
             {
                 try
                 {
-                    var info = MapProcess(proc, commandLines);
+                    var info = MapProcess(proc);
                     if (info != null)
                         result.Add(info);
                 }
@@ -55,8 +54,7 @@ public class ProcessMonitorService : IProcessMonitor
             try
             {
                 var proc = Process.GetProcessById(pid);
-                var commandLines = GetCommandLines(pid);
-                return MapProcess(proc, commandLines);
+                return MapProcess(proc);
             }
             catch
             {
@@ -174,7 +172,7 @@ public class ProcessMonitorService : IProcessMonitor
         });
     }
 
-    private ProcessInfo? MapProcess(Process proc, Dictionary<int, string> commandLines)
+    private ProcessInfo? MapProcess(Process proc)
     {
         try
         {
@@ -222,10 +220,24 @@ public class ProcessMonitorService : IProcessMonitor
             }
             catch { }
 
-            commandLines.TryGetValue(proc.Id, out var cmdLine);
-
+            // Get parent PID and command line via P/Invoke (no WMI)
             int parentPid = 0;
-            try { parentPid = GetParentProcessId(proc.Id); } catch { }
+            string? cmdLine = null;
+
+            var handle = NativeInterop.OpenProcess(
+                NativeInterop.ProcessAccessFlags.QueryLimitedInformation, false, (uint)proc.Id);
+            if (handle != IntPtr.Zero)
+            {
+                try
+                {
+                    parentPid = GetParentProcessIdNative(handle);
+                    cmdLine = GetCommandLineNative(handle);
+                }
+                finally
+                {
+                    NativeInterop.CloseHandle(handle);
+                }
+            }
 
             return new ProcessInfo
             {
@@ -285,38 +297,50 @@ public class ProcessMonitorService : IProcessMonitor
         }
     }
 
-    private static Dictionary<int, string> GetCommandLines(int? specificPid = null)
+    private static int GetParentProcessIdNative(IntPtr processHandle)
     {
-        var result = new Dictionary<int, string>();
-        try
-        {
-            var query = specificPid.HasValue
-                ? $"SELECT ProcessId, CommandLine FROM Win32_Process WHERE ProcessId = {specificPid.Value}"
-                : "SELECT ProcessId, CommandLine FROM Win32_Process";
+        var pbi = new NativeInterop.PROCESS_BASIC_INFORMATION();
+        int status = NativeInterop.NtQueryInformationProcess(
+            processHandle,
+            NativeInterop.ProcessBasicInformation,
+            ref pbi,
+            Marshal.SizeOf<NativeInterop.PROCESS_BASIC_INFORMATION>(),
+            out _);
 
-            using var searcher = new ManagementObjectSearcher(query);
-            foreach (var obj in searcher.Get())
-            {
-                var pid = Convert.ToInt32(obj["ProcessId"]);
-                var cmdLine = obj["CommandLine"]?.ToString();
-                if (!string.IsNullOrEmpty(cmdLine))
-                    result[pid] = cmdLine;
-            }
-        }
-        catch { }
-        return result;
+        return status == 0 ? pbi.InheritedFromUniqueProcessId.ToInt32() : 0;
     }
 
-    private static int GetParentProcessId(int pid)
+    private static string? GetCommandLineNative(IntPtr processHandle)
     {
+        // First call to get required buffer size
+        int status = NativeInterop.NtQueryInformationProcess(
+            processHandle,
+            NativeInterop.ProcessCommandLineInformation,
+            IntPtr.Zero, 0, out int size);
+
+        if (size == 0)
+            return null;
+
+        var buffer = Marshal.AllocHGlobal(size);
         try
         {
-            using var searcher = new ManagementObjectSearcher(
-                $"SELECT ParentProcessId FROM Win32_Process WHERE ProcessId = {pid}");
-            foreach (var obj in searcher.Get())
-                return Convert.ToInt32(obj["ParentProcessId"]);
+            status = NativeInterop.NtQueryInformationProcess(
+                processHandle,
+                NativeInterop.ProcessCommandLineInformation,
+                buffer, size, out _);
+
+            if (status != 0)
+                return null;
+
+            var unicodeString = Marshal.PtrToStructure<NativeInterop.UNICODE_STRING>(buffer);
+            if (unicodeString.Length == 0 || unicodeString.Buffer == IntPtr.Zero)
+                return null;
+
+            return Marshal.PtrToStringUni(unicodeString.Buffer, unicodeString.Length / 2);
         }
-        catch { }
-        return 0;
+        finally
+        {
+            Marshal.FreeHGlobal(buffer);
+        }
     }
 }
