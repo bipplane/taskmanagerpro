@@ -1,0 +1,95 @@
+<UserControl x:Class="TaskManagerPro.Views.ThreatDashboardView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:converters="clr-namespace:TaskManagerPro.Converters">
+    <UserControl.Resources>
+        <converters:ThreatLevelToColorConverter x:Key="ThreatColorConverter"/>
+    </UserControl.Resources>
+    <Grid Margin="8">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <!-- Scan Controls -->
+        <Border Grid.Row="0" Background="{StaticResource SurfaceBrush}" CornerRadius="8" Padding="12" Margin="0,0,0,8">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <TextBlock Grid.Row="0" Grid.Column="0" Text="Security Scanner" FontSize="18" FontWeight="Bold"
+                           Foreground="{StaticResource TextBrush}" VerticalAlignment="Center"/>
+                <Button Grid.Row="0" Grid.Column="2" Content="Scan All Processes"
+                        Command="{Binding ScanAllProcessesCommand}" Background="#7C3AED" Margin="8,0,0,0"/>
+                <Button Grid.Row="0" Grid.Column="3" Content="Clear Results"
+                        Command="{Binding ClearResultsCommand}" Margin="8,0,0,0"/>
+
+                <!-- VirusTotal API Key -->
+                <StackPanel Grid.Row="1" Grid.ColumnSpan="4" Orientation="Horizontal" Margin="0,8,0,0">
+                    <TextBlock Text="VirusTotal API Key:" Foreground="{StaticResource TextDimBrush}"
+                               VerticalAlignment="Center" Margin="0,0,8,0"/>
+                    <PasswordBox Width="300" VerticalContentAlignment="Center"/>
+                </StackPanel>
+
+                <!-- Progress Bar -->
+                <ProgressBar Grid.Row="2" Grid.ColumnSpan="4" Margin="0,8,0,0" Height="6"
+                             Value="{Binding ScanProgress}" Maximum="100"
+                             Visibility="{Binding IsScanning, Converter={StaticResource BoolToVisConverter}}"/>
+            </Grid>
+        </Border>
+
+        <!-- Scan Summary -->
+        <Border Grid.Row="1" Background="{StaticResource SurfaceBrush}" CornerRadius="8" Padding="12" Margin="0,0,0,8">
+            <StackPanel Orientation="Horizontal">
+                <TextBlock Text="{Binding ScanResults.Count, StringFormat='Total Scanned: {0}'}"
+                           Foreground="{StaticResource TextBrush}" Margin="0,0,20,0"/>
+                <Border Background="#EF4444" CornerRadius="3" Padding="8,2" Margin="0,0,8,0">
+                    <TextBlock Text="{Binding CriticalCount, StringFormat='Critical: {0}'}" Foreground="White" FontSize="12"/>
+                </Border>
+                <Border Background="#F97316" CornerRadius="3" Padding="8,2" Margin="0,0,8,0">
+                    <TextBlock Text="{Binding HighCount, StringFormat='High: {0}'}" Foreground="White" FontSize="12"/>
+                </Border>
+                <Border Background="#F59E0B" CornerRadius="3" Padding="8,2" Margin="0,0,8,0">
+                    <TextBlock Text="{Binding MediumCount, StringFormat='Medium: {0}'}" Foreground="White" FontSize="12"/>
+                </Border>
+                <Border Background="#10B981" CornerRadius="3" Padding="8,2">
+                    <TextBlock Text="{Binding CleanCount, StringFormat='Clean: {0}'}" Foreground="White" FontSize="12"/>
+                </Border>
+            </StackPanel>
+        </Border>
+
+        <!-- Threat Results DataGrid -->
+        <DataGrid Grid.Row="2" ItemsSource="{Binding ScanResults}"
+                  VirtualizingPanel.IsVirtualizing="True"
+                  VirtualizingPanel.VirtualizationMode="Recycling"
+                  EnableRowVirtualization="True"
+                  IsReadOnly="True">
+            <DataGrid.Columns>
+                <DataGridTemplateColumn Header="Threat" Width="80">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <Border Background="{Binding OverallThreatLevel, Converter={StaticResource ThreatColorConverter}}"
+                                    CornerRadius="3" Padding="4,2" HorizontalAlignment="Center">
+                                <TextBlock Text="{Binding OverallThreatLevel}" Foreground="White" FontSize="11"/>
+                            </Border>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+                <DataGridTextColumn Header="Process" Binding="{Binding Process}" Width="160"/>
+                <DataGridTextColumn Header="Path" Binding="{Binding FilePath}" Width="250"/>
+                <DataGridTextColumn Header="Findings" Binding="{Binding Findings.Count}" Width="70"/>
+                <DataGridTextColumn Header="Summary" Binding="{Binding Summary}" Width="*"/>
+            </DataGrid.Columns>
+        </DataGrid>
+    </Grid>
+</UserControl>

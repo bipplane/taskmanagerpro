@@ -1,0 +1,99 @@
+<UserControl x:Class="TaskManagerPro.Views.PerformanceView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:lvc="clr-namespace:LiveChartsCore.SkiaSharpView.WPF;assembly=LiveChartsCore.SkiaSharpView.WPF">
+    <Grid Margin="8">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+
+        <!-- CPU Chart -->
+        <Border Grid.Row="0" Grid.Column="0" Background="{StaticResource SurfaceBrush}"
+                CornerRadius="8" Margin="4" Padding="12">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+                <StackPanel Grid.Row="0" Orientation="Horizontal">
+                    <TextBlock Text="CPU" FontSize="16" FontWeight="Bold" Foreground="{StaticResource TextBrush}"/>
+                    <TextBlock Text="{Binding CpuPercent, StringFormat='{}{0:F1}%'}" FontSize="16"
+                               Foreground="{StaticResource PrimaryBrush}" Margin="12,0,0,0"/>
+                </StackPanel>
+                <lvc:CartesianChart Grid.Row="1" Series="{Binding CpuSeries}"
+                                    XAxes="{Binding XAxes}" YAxes="{Binding YAxes}"
+                                    AnimationsSpeed="00:00:00.100" TooltipPosition="Hidden"/>
+            </Grid>
+        </Border>
+
+        <!-- Memory Chart -->
+        <Border Grid.Row="0" Grid.Column="1" Background="{StaticResource SurfaceBrush}"
+                CornerRadius="8" Margin="4" Padding="12">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+                <StackPanel Grid.Row="0" Orientation="Horizontal">
+                    <TextBlock Text="Memory" FontSize="16" FontWeight="Bold" Foreground="{StaticResource TextBrush}"/>
+                    <TextBlock Text="{Binding MemoryPercent, StringFormat='{}{0:F1}%'}" FontSize="16"
+                               Foreground="{StaticResource SecondaryBrush}" Margin="12,0,0,0"/>
+                    <TextBlock Text="{Binding MemoryUsed, StringFormat=' ({0}'}" FontSize="12"
+                               Foreground="{StaticResource TextDimBrush}" Margin="8,3,0,0"/>
+                    <TextBlock Text="{Binding MemoryTotal, StringFormat=' / {0})'}" FontSize="12"
+                               Foreground="{StaticResource TextDimBrush}" Margin="0,3,0,0"/>
+                </StackPanel>
+                <lvc:CartesianChart Grid.Row="1" Series="{Binding MemorySeries}"
+                                    XAxes="{Binding XAxes}" YAxes="{Binding YAxes}"
+                                    AnimationsSpeed="00:00:00.100" TooltipPosition="Hidden"/>
+            </Grid>
+        </Border>
+
+        <!-- Disk Chart -->
+        <Border Grid.Row="1" Grid.Column="0" Background="{StaticResource SurfaceBrush}"
+                CornerRadius="8" Margin="4" Padding="12">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+                <StackPanel Grid.Row="0" Orientation="Horizontal">
+                    <TextBlock Text="Disk" FontSize="16" FontWeight="Bold" Foreground="{StaticResource TextBrush}"/>
+                    <TextBlock Text="{Binding DiskRead, StringFormat='R: {0}'}" FontSize="12"
+                               Foreground="#3B82F6" Margin="12,3,0,0"/>
+                    <TextBlock Text="{Binding DiskWrite, StringFormat='W: {0}'}" FontSize="12"
+                               Foreground="#F97316" Margin="12,3,0,0"/>
+                </StackPanel>
+                <lvc:CartesianChart Grid.Row="1" Series="{Binding DiskSeries}"
+                                    XAxes="{Binding XAxes}" YAxes="{Binding DiskYAxes}"
+                                    AnimationsSpeed="00:00:00.100" TooltipPosition="Hidden"/>
+            </Grid>
+        </Border>
+
+        <!-- Network Chart -->
+        <Border Grid.Row="1" Grid.Column="1" Background="{StaticResource SurfaceBrush}"
+                CornerRadius="8" Margin="4" Padding="12">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+                <StackPanel Grid.Row="0" Orientation="Horizontal">
+                    <TextBlock Text="Network" FontSize="16" FontWeight="Bold" Foreground="{StaticResource TextBrush}"/>
+                    <TextBlock Text="{Binding NetworkSent, StringFormat='S: {0}'}" FontSize="12"
+                               Foreground="#FF6B6B" Margin="12,3,0,0"/>
+                    <TextBlock Text="{Binding NetworkReceived, StringFormat='R: {0}'}" FontSize="12"
+                               Foreground="#6495ED" Margin="12,3,0,0"/>
+                </StackPanel>
+                <lvc:CartesianChart Grid.Row="1" Series="{Binding NetworkSeries}"
+                                    XAxes="{Binding XAxes}" YAxes="{Binding DiskYAxes}"
+                                    AnimationsSpeed="00:00:00.100" TooltipPosition="Hidden"/>
+            </Grid>
+        </Border>
+    </Grid>
+</UserControl>
