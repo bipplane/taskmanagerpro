@@ -29,6 +29,7 @@ public partial class NetworkViewModel : ObservableObject
         _networkMonitor = networkMonitor;
         FilteredConnections = CollectionViewSource.GetDefaultView(Connections);
         FilteredConnections.Filter = ConnectionFilter;
+        FilteredConnections.SortDescriptions.Add(new SortDescription("OwningPid", ListSortDirection.Ascending));
 
         _refreshTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(3) };
         _refreshTimer.Tick += async (_, _) => await RefreshConnectionsAsync();

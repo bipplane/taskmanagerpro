@@ -39,6 +39,7 @@ public partial class ProcessListViewModel : ObservableObject
 
         FilteredProcesses = CollectionViewSource.GetDefaultView(Processes);
         FilteredProcesses.Filter = ProcessFilter;
+        FilteredProcesses.SortDescriptions.Add(new SortDescription("Name", ListSortDirection.Ascending));
 
         _refreshTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(2) };
         _refreshTimer.Tick += async (_, _) => await RefreshProcessesAsync();

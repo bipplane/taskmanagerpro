@@ -52,7 +52,7 @@
                 <DataGridTextColumn Header="Threads" Binding="{Binding ThreadCount}" Width="60"/>
                 <DataGridTextColumn Header="Description" Binding="{Binding FileDescription}" Width="200"/>
                 <DataGridTextColumn Header="Company" Binding="{Binding CompanyName}" Width="140"/>
-                <DataGridTemplateColumn Header="Threat" Width="80">
+                <DataGridTemplateColumn Header="Threat" Width="80" SortMemberPath="ThreatLevel">
                     <DataGridTemplateColumn.CellTemplate>
                         <DataTemplate>
                             <Border Background="{Binding ThreatLevel, Converter={StaticResource ThreatColorConverter}}"

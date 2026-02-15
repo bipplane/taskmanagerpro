@@ -27,6 +27,7 @@ public partial class ServicesViewModel : ObservableObject
         _serviceManager = serviceManager;
         FilteredServices = CollectionViewSource.GetDefaultView(Services);
         FilteredServices.Filter = ServiceFilter;
+        FilteredServices.SortDescriptions.Add(new SortDescription("DisplayName", ListSortDirection.Ascending));
         _ = RefreshServicesAsync();
     }
 
