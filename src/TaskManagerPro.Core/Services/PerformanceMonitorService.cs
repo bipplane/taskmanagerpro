@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Net.NetworkInformation;
 using Microsoft.Extensions.Logging;
 using TaskManagerPro.Core.Interfaces;
 using TaskManagerPro.Core.Models;
@@ -13,6 +14,12 @@ public class PerformanceMonitorService : IPerformanceMonitor, IDisposable
     private PerformanceCounter? _diskWriteCounter;
     private Timer? _timer;
     private bool _disposed;
+
+    // Network rate tracking
+    private long _prevBytesSent;
+    private long _prevBytesReceived;
+    private DateTime _prevNetworkTime;
+    private bool _networkInitialized;
 
     public event EventHandler<PerformanceSnapshot>? SnapshotUpdated;
 
@@ -132,28 +139,39 @@ public class PerformanceMonitorService : IPerformanceMonitor, IDisposable
         catch { }
     }
 
-    private static void GetNetworkInfo(PerformanceSnapshot snapshot)
+    private void GetNetworkInfo(PerformanceSnapshot snapshot)
     {
         try
         {
-            var category = new PerformanceCounterCategory("Network Interface");
-            var instanceNames = category.GetInstanceNames();
+            long totalSent = 0, totalReceived = 0;
+            var now = DateTime.UtcNow;
 
-            double totalSent = 0, totalReceived = 0;
-            foreach (var instance in instanceNames)
+            foreach (var ni in NetworkInterface.GetAllNetworkInterfaces())
             {
-                try
-                {
-                    using var sentCounter = new PerformanceCounter("Network Interface", "Bytes Sent/sec", instance);
-                    using var recvCounter = new PerformanceCounter("Network Interface", "Bytes Received/sec", instance);
-                    totalSent += sentCounter.NextValue();
-                    totalReceived += recvCounter.NextValue();
-                }
-                catch { }
+                if (ni.OperationalStatus != OperationalStatus.Up)
+                    continue;
+                if (ni.NetworkInterfaceType is NetworkInterfaceType.Loopback or NetworkInterfaceType.Tunnel)
+                    continue;
+
+                var stats = ni.GetIPStatistics();
+                totalSent += stats.BytesSent;
+                totalReceived += stats.BytesReceived;
             }
 
-            snapshot.NetworkSentBytesPerSec = totalSent;
-            snapshot.NetworkReceivedBytesPerSec = totalReceived;
+            if (_networkInitialized)
+            {
+                var elapsed = (now - _prevNetworkTime).TotalSeconds;
+                if (elapsed > 0)
+                {
+                    snapshot.NetworkSentBytesPerSec = (totalSent - _prevBytesSent) / elapsed;
+                    snapshot.NetworkReceivedBytesPerSec = (totalReceived - _prevBytesReceived) / elapsed;
+                }
+            }
+
+            _prevBytesSent = totalSent;
+            _prevBytesReceived = totalReceived;
+            _prevNetworkTime = now;
+            _networkInitialized = true;
         }
         catch { }
     }
