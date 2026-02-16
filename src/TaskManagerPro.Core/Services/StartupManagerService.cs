@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using Microsoft.Extensions.Logging;
 using Microsoft.Win32;
 using TaskManagerPro.Core.Models;
@@ -102,6 +103,7 @@ public class StartupManagerService
                         Command = command,
                         Location = $"{rootName}\\{path}",
                         IsEnabled = IsStartupApproved(root, valueName),
+                        Publisher = GetPublisher(command),
                     });
                 }
                 catch (Exception ex)
@@ -151,6 +153,7 @@ public class StartupManagerService
                         Command = file,
                         Location = "Startup Folder",
                         IsEnabled = true,
+                        Publisher = GetPublisher(file),
                     });
                 }
             }
@@ -166,6 +169,7 @@ public class StartupManagerService
                         Command = file,
                         Location = "Common Startup Folder",
                         IsEnabled = true,
+                        Publisher = GetPublisher(file),
                     });
                 }
             }
@@ -175,5 +179,38 @@ public class StartupManagerService
             _logger.LogTrace(ex, "Failed to enumerate startup folder");
         }
         return entries;
+    }
+
+    private static string? GetPublisher(string? command)
+    {
+        if (string.IsNullOrWhiteSpace(command))
+            return null;
+
+        try
+        {
+            // Extract executable path from command string
+            string exePath;
+            var trimmed = command.Trim();
+            if (trimmed.StartsWith('"'))
+            {
+                var endQuote = trimmed.IndexOf('"', 1);
+                exePath = endQuote > 1 ? trimmed[1..endQuote] : trimmed.Trim('"');
+            }
+            else
+            {
+                var spaceIdx = trimmed.IndexOf(' ');
+                exePath = spaceIdx > 0 ? trimmed[..spaceIdx] : trimmed;
+            }
+
+            if (File.Exists(exePath))
+            {
+                var info = FileVersionInfo.GetVersionInfo(exePath);
+                if (!string.IsNullOrWhiteSpace(info.CompanyName))
+                    return info.CompanyName;
+            }
+        }
+        catch { }
+
+        return null;
     }
 }
