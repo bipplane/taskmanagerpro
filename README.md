@@ -1,6 +1,8 @@
 # TaskManagerPro
 
-A comprehensive Windows task manager with integrated threat detection, built with C# .NET 9 and WPF.
+Microslop getting on your nerves a little too much lately? Too much AI bloat on your computer that's running Windows 11? 
+
+Unfortunately I'm not good enough to intern there, let alone fix their OS. But here's a comprehensive Windows task manager with integrated threat detection that you could try, built with C# .NET 9 and WPF!
 
 
 <p align="center">
@@ -31,10 +33,10 @@ A comprehensive Windows task manager with integrated threat detection, built wit
 ### Network Connections
 - Enumerate active TCP/UDP connections via P/Invoke (GetExtendedTcpTable/GetExtendedUdpTable)
 - Map connections to owning processes
-- Auto-refresh every 3 seconds
+- Auto-refreshes every 3 seconds
 
 ### Startup Programs
-- List startup entries from registry Run keys and the Startup folder
+- List startup entries from registry Run keys and the Startup folder 
 - View publisher, command, and location for each entry
 
 ### Threat Detection (Security Tab)
