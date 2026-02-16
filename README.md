@@ -2,6 +2,14 @@
 
 A comprehensive Windows task manager with integrated threat detection, built with C# .NET 9 and WPF.
 
+<p align="center">
+<img
+   src="https://github.com/user-attachments/assets/e905ef55-505b-4160-8567-e541fa5e2c7e"
+   height = "350"
+   object-position: 50% 50%;
+   alt="chaewonnn">
+</p>
+
 ## Features
 
 ### Process Management
