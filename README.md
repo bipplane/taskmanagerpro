@@ -1,5 +1,10 @@
 # TaskManagerPro
 
+![.NET](https://img.shields.io/badge/.NET-9.0-512BD4?logo=dotnet)
+![C#](https://img.shields.io/badge/C%23-13-239120?logo=csharp)
+![WPF](https://img.shields.io/badge/WPF-Desktop-blue)
+![Platform](https://img.shields.io/badge/Platform-Windows%20x64-0078D4?logo=windows)
+
 A comprehensive Windows task manager with integrated threat detection, built with C# .NET 9 and WPF.
 
 
